@@ -1,3 +1,8 @@
+# TG Modified version
+
+1. Changed positioning of dismiss and edit buttons
+2. Added actionsheet support for DELETE action
+
 # IDMPhotoBrowser ![](http://cocoapod-badges.herokuapp.com/v/IDMPhotoBrowser/badge.png) ![](http://cocoapod-badges.herokuapp.com/p/IDMPhotoBrowser/badge.png)
 
 IDMPhotoBrowser is a new implementation based on [MWPhotoBrowser](https://github.com/mwaterfall/MWPhotoBrowser).
@@ -39,11 +44,11 @@ First create a photos array containing IDMPhoto objects:
 
 ``` objective-c
 // URLs array
-NSArray *photosURL = @[[NSURL URLWithString:@"http://farm4.static.flickr.com/3567/3523321514_371d9ac42f_b.jpg"], 
-[NSURL URLWithString:@"http://farm4.static.flickr.com/3629/3339128908_7aecabc34b_b.jpg"], 
-[NSURL URLWithString:@"http://farm4.static.flickr.com/3364/3338617424_7ff836d55f_b.jpg"], 
+NSArray *photosURL = @[[NSURL URLWithString:@"http://farm4.static.flickr.com/3567/3523321514_371d9ac42f_b.jpg"],
+[NSURL URLWithString:@"http://farm4.static.flickr.com/3629/3339128908_7aecabc34b_b.jpg"],
+[NSURL URLWithString:@"http://farm4.static.flickr.com/3364/3338617424_7ff836d55f_b.jpg"],
 [NSURL URLWithString:@"http://farm4.static.flickr.com/3590/3329114220_5fbc5bc92b_b.jpg"]];
-    
+
 // Create an array to store IDMPhoto objects
 NSMutableArray *photos = [NSMutableArray new];
 
@@ -51,7 +56,7 @@ for (NSURL *url in photosURL) {
 	IDMPhoto *photo = [IDMPhoto photoWithURL:url];
 	[photos addObject:photo];
 }
-	
+
 // Or use this constructor to receive an NSArray of IDMPhoto objects from your NSURL objects
 NSArray *photos = [IDMPhoto photosWithURLs:photosURL];
 ````
@@ -60,19 +65,19 @@ There are two main ways to presente the photoBrowser, with a fade on screen or w
 
 Using a simple fade transition:
 
-``` objective-c    
+``` objective-c
 IDMPhotoBrowser *browser = [[IDMPhotoBrowser alloc] initWithPhotos:photos];
-``` 
+```
 
 Zooming effect from a view:
 
-``` objective-c    
+``` objective-c
 IDMPhotoBrowser *browser = [[IDMPhotoBrowser alloc] initWithPhotos:photos animatedFromView:sender];
 ```
 
 When using this animation you can set the `scaleImage` property, in case the image from the view is not the same as the one that will be shown on the browser, so it will dynamically scale it:
 
-``` objective-c    
+``` objective-c
 browser.scaleImage = buttonSender.currentImage;
 ```
 
@@ -89,14 +94,14 @@ Presenting using a modal view controller:
 You can customize the toolbar. There are three boolean properties you can set: displayActionButton (default is YES), displayArrowButton (default is YES) and displayCounterLabel (default is NO). If you dont want the toolbar at all, you can set displayToolbar = NO.
 
 Toolbar setup example:
-``` objective-c     
+``` objective-c
 browser.displayActionButton = NO;
 browser.displayArrowButton = YES;
 browser.displayCounterLabel = YES;
 ```
 
 It is possible to use your own image on the toolbar arrows:
-``` objective-c     
+``` objective-c
 browser.leftArrowImage = [UIImage imageNamed:@"IDMPhotoBrowser_customArrowLeft.png"];
 browser.rightArrowImage = [UIImage imageNamed:@"IDMPhotoBrowser_customArrowRight.png"];
 browser.leftArrowSelectedImage = [UIImage imageNamed:@"IDMPhotoBrowser_customArrowLeftSelected.png"];
@@ -105,14 +110,14 @@ browser.rightArrowSelectedImage = [UIImage imageNamed:@"IDMPhotoBrowser_customAr
 
 If you want to use custom actions, set the actionButtonTitles array with the titles for the actionSheet. Then, implement the photoBrowser:didDismissActionSheetWithButtonIndex:photoIndex: method, from the IDMPhotoBrowser delegate
 
-``` objective-c    
+``` objective-c
 browser.actionButtonTitles = @[@"Option 1", @"Option 2", @"Option 3", @"Option 4"];
 ```
 
 #### Others
 
 Others customizations you can make are: use white background color, don't display the done button and change the done button background image:
-``` objective-c    
+``` objective-c
 browser.useWhiteBackgroundColor = YES;
 browser.displayDoneButton = NO;
 browser.doneBackgroundImage = [UIImage imageNamed:@"IDMPhotoBrowser_customDoneButton.png"];

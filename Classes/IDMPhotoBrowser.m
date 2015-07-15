@@ -35,6 +35,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 
     // Buttons
     UIButton *_doneButton;
+    UIButton *_editButton;
 
 	// Toolbar
 	UIToolbar *_toolbar;
@@ -130,7 +131,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 @implementation IDMPhotoBrowser
 
 // Properties
-@synthesize displayDoneButton = _displayDoneButton, displayToolbar = _displayToolbar, displayActionButton = _displayActionButton, displayCounterLabel = _displayCounterLabel, useWhiteBackgroundColor = _useWhiteBackgroundColor, doneButtonImage = _doneButtonImage;
+@synthesize displayDoneButton = _displayDoneButton, displayToolbar = _displayToolbar, displayActionButton = _displayActionButton, displayCounterLabel = _displayCounterLabel, useWhiteBackgroundColor = _useWhiteBackgroundColor, editButtonImage = _editButtonImage, doneButtonImage = _doneButtonImage;
 @synthesize leftArrowImage = _leftArrowImage, rightArrowImage = _rightArrowImage, leftArrowSelectedImage = _leftArrowSelectedImage, rightArrowSelectedImage = _rightArrowSelectedImage;
 @synthesize displayArrowButton = _displayArrowButton, actionButtonTitles = _actionButtonTitles;
 @synthesize arrowButtonsChangePhotosAnimated = _arrowButtonsChangePhotosAnimated;
@@ -160,6 +161,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 
         _displayDoneButton = YES;
         _doneButtonImage = nil;
+        _editButtonImage = nil;
 
         _displayToolbar = YES;
         _displayActionButton = YES;
@@ -295,7 +297,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
     [scrollView setCenter:translatedPoint];
 
     float newY = scrollView.center.y - viewHalfHeight;
-    float newAlpha = 1 - fabsf(newY)/viewHeight; //abs(newY)/viewHeight * 1.8;
+    float newAlpha = 1 - abs(newY)/viewHeight; //abs(newY)/viewHeight * 1.8;
 
     self.view.opaque = YES;
 
@@ -375,7 +377,6 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 
 - (void)performPresentAnimation {
     self.view.alpha = 0.0f;
-    _pagingScrollView.alpha = 0.0f;
 
     UIImage *imageFromView = _scaleImage ? _scaleImage : [self getImageFromView:_senderViewForAnimation];
     imageFromView = [self rotateImageToCurrentOrientation:imageFromView];
@@ -400,7 +401,6 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 
     void (^completion)() = ^() {
         self.view.alpha = 1.0f;
-        _pagingScrollView.alpha = 1.0f;
         resizableImageView.backgroundColor = [UIColor colorWithWhite:(_useWhiteBackgroundColor) ? 1 : 0 alpha:1];
         [fadeView removeFromSuperview];
         [resizableImageView removeFromSuperview];
@@ -430,13 +430,9 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 }
 
 - (void)performCloseAnimationWithScrollView:(IDMZoomingScrollView*)scrollView {
-    float fadeAlpha = 1 - fabs(scrollView.frame.origin.y)/scrollView.frame.size.height;
+    float fadeAlpha = 1 - abs(scrollView.frame.origin.y)/scrollView.frame.size.height;
 
     UIImage *imageFromView = [scrollView.photo underlyingImage];
-    if (!imageFromView && [scrollView.photo respondsToSelector:@selector(placeholderImage)]) {
-        imageFromView = [scrollView.photo placeholderImage];
-    }
-
     //imageFromView = [self rotateImageToCurrentOrientation:imageFromView];
 
     CGRect screenBound = [[UIScreen mainScreen] bounds];
@@ -552,6 +548,9 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 #pragma mark - View Lifecycle
 
 - (void)viewDidLoad {
+    // Transition animation
+    [self performPresentAnimation];
+
     // View
 	self.view.backgroundColor = [UIColor colorWithWhite:(_useWhiteBackgroundColor ? 1 : 0) alpha:1];
 
@@ -569,9 +568,6 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
     _pagingScrollView.contentSize = [self contentSizeForPagingScrollView];
 	[self.view addSubview:_pagingScrollView];
 
-    // Transition animation
-    [self performPresentAnimation];
-
     UIInterfaceOrientation currentOrientation = [UIApplication sharedApplication].statusBarOrientation;
 
     // Toolbar
@@ -585,8 +581,8 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 
     // Close Button
     _doneButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [_doneButton setFrame:[self frameForDoneButtonAtOrientation:currentOrientation]];
     [_doneButton setAlpha:1.0f];
+    [_doneButton setFrame:[self frameForDoneButtonAtOrientation:currentOrientation]];
     [_doneButton addTarget:self action:@selector(doneButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
 
     if(!_doneButtonImage) {
@@ -601,6 +597,15 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
     else {
         [_doneButton setImage:_doneButtonImage forState:UIControlStateNormal];
         _doneButton.contentMode = UIViewContentModeScaleAspectFit;
+    }
+
+    // Edit Options Button
+    _editButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [_editButton setAlpha:1.0f];
+    [_editButton setFrame:[self frameForEditButtonAtOrientation:currentOrientation]];
+    if(_editButtonImage) {
+        [_editButton addTarget:self action:@selector(actionButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+        [_editButton setImage:_editButtonImage forState:UIControlStateNormal];
     }
 
     UIImage *leftButtonImage = (_leftArrowImage == nil) ?
@@ -642,11 +647,6 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
     // Counter Button
     _counterButton = [[UIBarButtonItem alloc] initWithCustomView:_counterLabel];
 
-    // Action Button
-    _actionButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction
-                                                                  target:self
-                                                                  action:@selector(actionButtonPressed:)];
-
     // Gesture
     _panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panGestureRecognized:)];
     [_panGesture setMinimumNumberOfTouches:1];
@@ -686,6 +686,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
     _recycledPages = nil;
     _toolbar = nil;
     _doneButton = nil;
+    _editButton = nil;
     _previousButton = nil;
     _nextButton = nil;
 
@@ -733,6 +734,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 
     // Done button
     _doneButton.frame = [self frameForDoneButtonAtOrientation:currentOrientation];
+    _editButton.frame = [self frameForEditButtonAtOrientation:currentOrientation];
 
 
     // Remember index
@@ -787,6 +789,10 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
     if(_displayDoneButton && !self.navigationController.navigationBar)
         [self.view addSubview:_doneButton];
 
+    // Edit button
+    if(!self.navigationController.navigationBar)
+        [self.view addSubview:_editButton];
+
     // Toolbar items & navigation
     UIBarButtonItem *fixedLeftSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace
                                                                                     target:self action:nil];
@@ -812,8 +818,6 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
         [items addObject:_nextButton];
     [items addObject:flexSpace];
 
-    if(_displayActionButton)
-        [items addObject:_actionButton];
 
     [_toolbar setItems:items];
 	[self updateToolbar];
@@ -870,9 +874,6 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 			return [photo underlyingImage];
 		} else {
             [photo loadUnderlyingImageAndNotify];
-            if ([photo respondsToSelector:@selector(placeholderImage)]) {
-                return [photo placeholderImage];
-            }
 		}
 	}
 
@@ -1082,12 +1083,18 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 }
 
 - (CGRect)frameForDoneButtonAtOrientation:(UIInterfaceOrientation)orientation {
+    // if ([self isLandscape:orientation]) screenWidth = screenBound.size.height;
+
+    return CGRectMake(0, 0, 60, 60);
+}
+
+- (CGRect)frameForEditButtonAtOrientation:(UIInterfaceOrientation)orientation {
     CGRect screenBound = self.view.bounds;
     CGFloat screenWidth = screenBound.size.width;
 
     // if ([self isLandscape:orientation]) screenWidth = screenBound.size.height;
 
-    return CGRectMake(0, 0, 60, 60);
+    return CGRectMake(screenWidth - 60, 0, 60, 60);
 }
 
 - (CGRect)frameForCaptionView:(IDMCaptionView *)captionView atIndex:(NSUInteger)index {
@@ -1189,6 +1196,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
         [self.navigationController.navigationBar setAlpha:alpha];
         [_toolbar setAlpha:alpha];
         [_doneButton setAlpha:alpha];
+        [_editButton setAlpha:alpha];
         for (UIView *v in captionViews) v.alpha = alpha;
     } completion:^(BOOL finished) {}];
 
@@ -1262,21 +1270,10 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
             self.activityViewController = [[UIActivityViewController alloc] initWithActivityItems:activityItems applicationActivities:nil];
 
             __typeof__(self) __weak selfBlock = self;
-
-			if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"8.0"))
-			{
-				[self.activityViewController setCompletionWithItemsHandler:^(NSString *activityType, BOOL completed, NSArray *returnedItems, NSError *activityError) {
-					[selfBlock hideControlsAfterDelay];
-					selfBlock.activityViewController = nil;
-				}];
-			}
-			else
-			{
-				[self.activityViewController setCompletionHandler:^(NSString *activityType, BOOL completed) {
-					[selfBlock hideControlsAfterDelay];
-					selfBlock.activityViewController = nil;
-				}];
-			}
+            [self.activityViewController setCompletionHandler:^(NSString *activityType, BOOL completed) {
+                [selfBlock hideControlsAfterDelay];
+                selfBlock.activityViewController = nil;
+            }];
 
             [self presentViewController:self.activityViewController animated:YES completion:nil];
         }
@@ -1286,14 +1283,18 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
             self.actionsSheet = [UIActionSheet new];
             self.actionsSheet.delegate = self;
             for(NSString *action in _actionButtonTitles) {
-                [self.actionsSheet addButtonWithTitle:action];
+                if([action isEqualToString:_actionButtonTitles.lastObject]) {
+                    self.actionsSheet.destructiveButtonIndex = [self.actionsSheet addButtonWithTitle:action];
+                } else {
+                    [self.actionsSheet addButtonWithTitle:action];
+                }
             }
 
             self.actionsSheet.cancelButtonIndex = [self.actionsSheet addButtonWithTitle:IDMPhotoBrowserLocalizedStrings(@"Cancel")];
-            self.actionsSheet.actionSheetStyle = UIActionSheetStyleBlackTranslucent;
+            self.actionsSheet.actionSheetStyle = UIActionSheetStyleAutomatic;
 
             if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
-                [_actionsSheet showFromBarButtonItem:sender animated:YES];
+                [_actionsSheet showFromRect:[(UIButton *)sender frame] inView:self.view animated:YES];
             } else {
                 [_actionsSheet showInView:self.view];
             }
