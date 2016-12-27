@@ -184,19 +184,9 @@
 
         _applicationWindow = [[[UIApplication sharedApplication] delegate] window];
 
-		if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"8.0"))
-		{
 			self.modalPresentationStyle = UIModalPresentationCustom;
 			self.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
-            self.modalPresentationCapturesStatusBarAppearance = YES;
-		}
-		else
-		{
-			_applicationTopViewController = [self topviewController];
-			_previousModalPresentationStyle = _applicationTopViewController.modalPresentationStyle;
-			_applicationTopViewController.modalPresentationStyle = UIModalPresentationCurrentContext;
-			self.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
-		}
+      self.modalPresentationCapturesStatusBarAppearance = YES;
 
 		self.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
 
@@ -503,11 +493,6 @@
     [self dismissViewControllerAnimated:animated completion:^{
         if ([_delegate respondsToSelector:@selector(photoBrowser:didDismissAtPageIndex:)])
             [_delegate photoBrowser:self didDismissAtPageIndex:_currentPageIndex];
-
-		if (SYSTEM_VERSION_LESS_THAN(@"8.0"))
-		{
-			_applicationTopViewController.modalPresentationStyle = _previousModalPresentationStyle;
-		}
     }];
 }
 
